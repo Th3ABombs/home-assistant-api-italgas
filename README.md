@@ -7,7 +7,7 @@ Integrazione custom che legge le letture del contatore gas dal portale
 l'integrazione fa login e legge la pagina `ricercaLetture.action` (scraping).
 
 ## Sensori
-- **Lettura contatore** (m³, `total_increasing`)
+- **Lettura contatore** (m³, solo valore attuale: lo storico è nella statistica descritta sotto)
 - **Data ultima lettura**
 - **Consumo ultimo periodo** (differenza tra le ultime due letture, con storico negli attributi)
 

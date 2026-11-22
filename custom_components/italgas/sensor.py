@@ -9,7 +9,6 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
-    SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfVolume
@@ -39,7 +38,9 @@ SENSORS: tuple[ItalgasSensorDescription, ...] = (
         key="meter_reading",
         translation_key="meter_reading",
         device_class=SensorDeviceClass.GAS,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        # niente state_class: lo storico per la dashboard Energia è la statistica
+        # esterna italgas:gas_<PdR>; con state_class HA creerebbe un doppione
+        # (statistiche ogni 5 minuti sempre a 0)
         native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
         value_fn=lambda r: r[-1].value,
         attrs_fn=lambda r: {

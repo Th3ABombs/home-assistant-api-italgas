@@ -17,12 +17,15 @@ from homeassistant.components.recorder.statistics import (
 from homeassistant.const import UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import VolumeConverter
 
 from .api import ItalgasAuthError, ItalgasClient, ItalgasError, Reading
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, HISTORY_YEARS
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, HISTORY_YEARS, MIN_FETCH_INTERVAL
+
+STORAGE_VERSION = 1
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +77,39 @@ def build_statistics(
     return stats
 
 
+def needs_fetch(
+    latest: date | None,
+    last_fetch: datetime | None,
+    now: datetime,
+    today: date,
+) -> bool:
+    """True se conviene contattare il portale.
+
+    Le letture sono mensili (datate a fine mese): se abbiamo già quella di fine
+    del mese precedente non serve chiedere nulla fino al mese prossimo. Quando
+    una lettura è attesa, al massimo un accesso ogni MIN_FETCH_INTERVAL.
+    """
+    if latest is None or last_fetch is None:
+        return True
+    end_prev_month = today.replace(day=1) - timedelta(days=1)
+    if latest >= end_prev_month:
+        return False
+    return now - last_fetch >= MIN_FETCH_INTERVAL
+
+
+def reading_to_dict(r: Reading) -> dict:
+    return {"date": r.date.isoformat(), "value": r.value, "kind": r.kind, "meter": r.meter}
+
+
+def reading_from_dict(d: dict) -> Reading:
+    return Reading(
+        date=date.fromisoformat(d["date"]),
+        value=d["value"],
+        kind=d.get("kind"),
+        meter=d.get("meter"),
+    )
+
+
 class ItalgasCoordinator(DataUpdateCoordinator[list[Reading]]):
     def __init__(self, hass: HomeAssistant, client: ItalgasClient, pdr: str) -> None:
         super().__init__(
@@ -82,18 +118,50 @@ class ItalgasCoordinator(DataUpdateCoordinator[list[Reading]]):
         self.client = client
         self.pdr = pdr
         self.statistic_id = statistic_id_for(pdr)
+        self._store: Store[dict] = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{pdr}")
+        self._cache: list[Reading] | None = None
+        self._last_fetch: datetime | None = None
+
+    async def _load_cache(self) -> None:
+        if self._cache is not None:
+            return
+        data = await self._store.async_load() or {}
+        self._cache = [reading_from_dict(r) for r in data.get("readings", [])]
+        if ts := data.get("last_fetch"):
+            self._last_fetch = dt_util.parse_datetime(ts)
+
+    async def _save_cache(self, readings: list[Reading]) -> None:
+        self._cache, self._last_fetch = readings, dt_util.utcnow()
+        await self._store.async_save(
+            {
+                "last_fetch": self._last_fetch.isoformat(),
+                "readings": [reading_to_dict(r) for r in readings],
+            }
+        )
 
     async def _async_update_data(self) -> list[Reading]:
+        await self._load_cache()
         last = await get_instance(self.hass).async_add_executor_job(
             get_last_statistics, self.hass, 1, self.statistic_id, True, {"state", "sum"}
         )
         last_row = (last.get(self.statistic_id) or [None])[0]
+
+        latest = self._cache[-1].date if self._cache else None
+        if last_row is not None and not needs_fetch(
+            latest, self._last_fetch, dt_util.utcnow(), dt_util.now().date()
+        ):
+            _LOGGER.debug(
+                "Italgas: nessuna richiesta al portale (ultima lettura %s, ultimo accesso %s)",
+                latest, self._last_fetch,
+            )
+            return self._cache
 
         # primo avvio: tutto lo storico disponibile; poi solo gli ultimi 12 mesi
         start = None
         if last_row is None:
             start = date.today() - timedelta(days=365 * HISTORY_YEARS)
 
+        _LOGGER.info("Italgas: richiesta letture al portale")
         try:
             readings = await self.client.get_readings(start=start)
         except ItalgasAuthError as err:
@@ -106,6 +174,7 @@ class ItalgasCoordinator(DataUpdateCoordinator[list[Reading]]):
             raise UpdateFailed("Nessuna lettura trovata")
 
         self._import_statistics(readings, last_row)
+        await self._save_cache(readings)
         return readings
 
     def _import_statistics(self, readings: list[Reading], last_row) -> None:

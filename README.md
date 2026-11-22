@@ -11,7 +11,11 @@ l'integrazione fa login e legge la pagina `ricercaLetture.action` (scraping).
 - **Data ultima lettura**
 - **Consumo ultimo periodo** (differenza tra le ultime due letture, con storico negli attributi)
 
-Aggiornamento ogni 12 ore (le letture sono mensili).
+Aggiornamento: le letture sono mensili (datate a fine mese), quindi il portale
+viene contattato solo quando serve:
+- se c'è già la lettura di fine mese precedente, nessun accesso fino al mese dopo;
+- quando una lettura è attesa, al massimo un accesso al giorno finché non compare;
+- le letture sono salvate su disco, quindi un riavvio di HA non causa accessi.
 
 ## Statistiche storiche (dashboard Energia)
 Oltre ai sensori, l'integrazione importa le letture come statistica esterna

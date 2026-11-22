@@ -1,8 +1,8 @@
 """Test offline del calcolo delle statistiche."""
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 from custom_components.italgas.api import Reading
-from custom_components.italgas.coordinator import build_statistics, reading_start
+from custom_components.italgas.coordinator import build_statistics, needs_fetch, reading_start
 
 
 def _r(d, v):
@@ -36,3 +36,24 @@ def test_meter_replacement_counts_new_meter_from_zero():
     assert [s["sum"] for s in stats] == [0, 0, 5, 31]
     stats = build_statistics([_r("2026-01-31", 500), _r("2026-02-28", 10)], None, None, None)
     assert [s["sum"] for s in stats] == [0, 10]
+
+
+NOW = datetime(2026, 11, 22, 12, tzinfo=timezone.utc)
+TODAY = date(2026, 11, 22)
+
+
+def test_fetch_on_first_run():
+    assert needs_fetch(None, None, NOW, TODAY)
+
+
+def test_no_fetch_when_previous_month_reading_present():
+    # c'è già la lettura del 31/10: niente accessi fino a dicembre
+    assert not needs_fetch(date(2026, 10, 31), NOW - timedelta(days=20), NOW, TODAY)
+    assert not needs_fetch(date(2026, 10, 31), NOW - timedelta(minutes=5), NOW, TODAY)
+
+
+def test_fetch_at_most_daily_when_reading_expected():
+    today = date(2026, 12, 3)  # attesa la lettura del 30/11
+    now = datetime(2026, 12, 3, 12, tzinfo=timezone.utc)
+    assert not needs_fetch(date(2026, 10, 31), now - timedelta(hours=6), now, today)
+    assert needs_fetch(date(2026, 10, 31), now - timedelta(hours=25), now, today)

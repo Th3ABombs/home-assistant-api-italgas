@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Italgas",
+        "description": "Credenziali del portale clienti.italgas.it. Lascia vuoto il PdR per usare la prima fornitura dell'account.",
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "pdr": "PDR"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Credenziali non valide",
+      "cannot_connect": "Impossibile contattare il portale Italgas",
+      "unknown": "Errore imprevisto",
+      "pdr_not_found": "Questo PdR non è associato all'account"
+    },
+    "abort": {
+      "already_configured": "Questo PDR è già configurato"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "meter_reading": {
+        "name": "Lettura contatore"
+      },
+      "last_reading_date": {
+        "name": "Data ultima lettura"
+      },
+      "last_period_consumption": {
+        "name": "Consumo ultimo periodo"
+      }
+    }
+  }
+}

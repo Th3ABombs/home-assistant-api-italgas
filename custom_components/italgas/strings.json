@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Italgas",
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "pdr": "PDR"
+        },
+        "description": "Italgas customer portal credentials. Leave PdR empty to use the first supply on the account."
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid credentials",
+      "cannot_connect": "Cannot connect to the Italgas portal",
+      "unknown": "Unexpected error",
+      "pdr_not_found": "This PdR is not associated with the account"
+    },
+    "abort": {
+      "already_configured": "This PDR is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "meter_reading": {
+        "name": "Meter reading"
+      },
+      "last_reading_date": {
+        "name": "Last reading date"
+      },
+      "last_period_consumption": {
+        "name": "Last period consumption"
+      }
+    }
+  }
+}

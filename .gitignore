@@ -1,0 +1,6 @@
+credentials.json
+debug/
+.venv/
+__pycache__/
+*.pyc
+.venv-test/

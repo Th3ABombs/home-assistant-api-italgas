@@ -1,3 +1,5 @@
+<img src="custom_components/italgas/brand/icon@2x.png" alt="" width="128" align="right">
+
 # Italgas per Home Assistant
 
 Integrazione custom che legge le letture del contatore gas dal portale
@@ -23,6 +25,9 @@ nel giorno in cui HA scarica la lettura e non nel mese corretto).
 
 Se la lettura scende (contatore sostituito) il nuovo contatore viene considerato
 ripartito da zero.
+
+Icona originale (non il logo ufficiale Italgas: l'integrazione non è affiliata a Italgas),
+generata con `scripts/make_brand.py`.
 
 ## Installazione
 Copia `custom_components/italgas` in `<config>/custom_components/`, riavvia HA e

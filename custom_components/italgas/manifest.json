@@ -1,9 +1,11 @@
 {
   "domain": "italgas",
   "name": "Italgas",
-  "codeowners": [],
+  "codeowners": [
+    "@Th3ABombs"
+  ],
   "config_flow": true,
-  "documentation": "https://github.com/",
+  "documentation": "https://github.com/Th3ABombs/home-assistant-api-italgas",
   "iot_class": "cloud_polling",
   "integration_type": "service",
   "requirements": [
@@ -12,5 +14,6 @@
   "version": "0.1.0",
   "dependencies": [
     "recorder"
-  ]
+  ],
+  "issue_tracker": "https://github.com/Th3ABombs/home-assistant-api-italgas/issues"
 }
